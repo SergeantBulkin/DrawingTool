@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">DrawingTool</string>
+    <string name="bottom_bar_menu_paint_size">Paint Size</string>
+    <string name="bottom_bar_menu_color_picker">Color Picker</string>
+    <string name="bottom_bar_menu_upload_image">Upload Image</string>
+    <string name="bottom_bar_menu_more">More</string>
+    <string name="bottom_bar_navigation">Navigation</string>
+</resources>

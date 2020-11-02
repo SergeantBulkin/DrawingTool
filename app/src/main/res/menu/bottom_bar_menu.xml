@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/paintSize"
+        android:icon="@drawable/ic_paint_size"
+        android:title="@string/bottom_bar_menu_paint_size"
+        android:contentDescription="@string/bottom_bar_menu_paint_size"
+        app:showAsAction="always">
+    </item>
+
+    <item
+        android:id="@+id/colorPicker"
+        android:icon="@drawable/ic_color_picker"
+        android:title="@string/bottom_bar_menu_color_picker"
+        android:contentDescription="@string/bottom_bar_menu_color_picker"
+        app:showAsAction="always">
+    </item>
+
+    <item
+        android:id="@+id/uploadImage"
+        android:icon="@drawable/ic_upload_image"
+        android:title="@string/bottom_bar_menu_upload_image"
+        android:contentDescription="@string/bottom_bar_menu_upload_image"
+        app:showAsAction="always">
+    </item>
+
+    <item
+        android:id="@+id/more"
+        android:icon="@drawable/ic_more"
+        android:title="@string/bottom_bar_menu_more"
+        android:contentDescription="@string/bottom_bar_menu_more"
+        app:showAsAction="always">
+    </item>
+</menu>
