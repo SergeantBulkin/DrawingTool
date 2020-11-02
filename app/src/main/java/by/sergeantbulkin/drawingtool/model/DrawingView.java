@@ -14,20 +14,32 @@ import androidx.annotation.Nullable;
 
 public class DrawingView extends View
 {
-    public static final int LINE = 1;
-    public static final int RECTANGLE = 2;
-    public static final int SQUARE = 3;
-    public static final int CIRCLE = 4;
-    public static final int TRIANGLE = 5;
+    public static final int PEN = 1;
+    public static final int LINE = 2;
+    public static final int RECTANGLE = 3;
+    public static final int SQUARE = 5;
+    public static final int CIRCLE = 6;
+    public static final int TRIANGLE = 7;
+
+    public static final float TOUCH_TOLERANCE = 4;
+
+    //Indicates if you are drawing
+    private boolean isDrawing = false;
+
+    private float mStartX;
+    private float mStartY;
+
+    private float mx;
+    private float my;
 
     private int currentShape;
     //----------------------------------------------------------------------------------------------
     // путь для рисования
-    private Path drawPath;
+    private Path path;
     // Paint для рисования и для холста
-    private Paint drawPaint, canvasPaint;
+    private Paint paint;
     // холст
-    private Canvas drawCanvas;
+    private Canvas mCanvas;
     // битмап холста
     private Bitmap canvasBitmap;
     //----------------------------------------------------------------------------------------------
@@ -40,22 +52,26 @@ public class DrawingView extends View
     //Установить цвет рисования
     public void setDrawPaintColor(int paintColor)
     {
-        drawPaint.setColor(paintColor);
+        paint.setColor(paintColor);
+    }
+    //Установить форму рисования
+    public void setDrawShape(int shape)
+    {
+        this.currentShape = shape;
     }
     //----------------------------------------------------------------------------------------------
     private void setUpDrawing()
     {
         currentShape = 1;
-        drawPath = new Path();
-        drawPaint = new Paint();
-        // начальный цвет
-        drawPaint.setColor(0xFF000000);
-        drawPaint.setAntiAlias(true);
-        drawPaint.setStrokeWidth(25);
-        drawPaint.setStyle(Paint.Style.STROKE);
-        drawPaint.setStrokeJoin(Paint.Join.ROUND);
-        drawPaint.setStrokeCap(Paint.Cap.ROUND);
-        canvasPaint = new Paint(Paint.DITHER_FLAG);
+        path = new Path();
+
+        paint = new Paint(Paint.DITHER_FLAG);
+        paint.setColor(0xFF000000); // начальный цвет
+        paint.setAntiAlias(true);
+        paint.setStrokeWidth(25);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeJoin(Paint.Join.ROUND);
+        paint.setStrokeCap(Paint.Cap.ROUND);
     }
     //----------------------------------------------------------------------------------------------
     //Задание размера View
@@ -64,43 +80,294 @@ public class DrawingView extends View
     {
         super.onSizeChanged(w, h, oldw, oldh);
         canvasBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-        drawCanvas = new Canvas(canvasBitmap);
+        mCanvas = new Canvas(canvasBitmap);
     }
     //----------------------------------------------------------------------------------------------
     //Отображения рисунка, который нарисован пользователем
     @Override
     protected void onDraw(Canvas canvas)
     {
-        canvas.drawBitmap(canvasBitmap, 0,0, canvasPaint);
-        canvas.drawPath(drawPath, drawPaint);
-    }
+        canvas.drawBitmap(canvasBitmap, 0, 0, paint);
 
+        if (isDrawing)
+        {
+            switch (currentShape) {
+                case PEN:
+                    onDrawPen();
+                    break;
+                case LINE:
+                    onDrawLine(canvas);
+                    break;
+                case RECTANGLE:
+                    onDrawRectangle(canvas);
+                    break;
+                case SQUARE:
+                    onDrawSquare(canvas);
+                    break;
+                case CIRCLE:
+                    onDrawCircle(canvas);
+                    break;
+                case TRIANGLE:
+                    onDrawTriangle(canvas);
+                    break;
+            }
+        }
+    }
+    //----------------------------------------------------------------------------------------------
     @Override
     public boolean onTouchEvent(MotionEvent event)
     {
-        float touchX = event.getX();
-        float touchY = event.getY();
-        //Log.d("TAG", "X: " + touchX + "|Y: " + touchY);
-        // реакция на события "палец на экране", "движение по экрану" и "палец поднят"
+        mx = event.getX();
+        my = event.getY();
+
+        switch (currentShape)
+        {
+            case PEN:
+                onTouchEventPen(event);
+                break;
+            case LINE:
+                onTouchEventLine(event);
+                break;
+            case RECTANGLE:
+                onTouchEventRectangle(event);
+                break;
+            case SQUARE:
+                onTouchEventSquare(event);
+                break;
+            case CIRCLE:
+                onTouchEventCircle(event);
+                break;
+            case TRIANGLE:
+                onTouchEventTriangle(event);
+                break;
+        }
+        return true;
+    }
+    //----------------------------------------------------------------------------------------------
+    //Pen
+    private void onDrawPen()
+    {
+        mCanvas.drawPath(path, paint);
+    }
+
+    private void onTouchEventPen(MotionEvent event)
+    {
         switch (event.getAction())
         {
             case MotionEvent.ACTION_DOWN:
-                drawPath.moveTo(touchX, touchY);
+                isDrawing = true;
+                path.moveTo(mx, my);
                 break;
             case MotionEvent.ACTION_MOVE:
-                drawPath.lineTo(touchX, touchY);
+                path.lineTo(mx, my);
                 break;
             case MotionEvent.ACTION_UP:
-                drawPath.lineTo(touchX, touchY);
-                drawCanvas.drawPath(drawPath, drawPaint);
-                drawPath.reset();
+                isDrawing = false;
+                path.lineTo(mx, my);
+                mCanvas.drawPath(path, paint);
+                path.reset();
                 break;
-            default:
-                return false;
         }
-        // перерисовать
+        //Перерисовать
         invalidate();
-        return true;
+    }
+    //----------------------------------------------------------------------------------------------
+    // Line
+    private void onDrawLine(Canvas canvas)
+    {
+        float dx = Math.abs(mx - mStartX);
+        float dy = Math.abs(my - mStartY);
+        if (dx >= TOUCH_TOLERANCE || dy >= TOUCH_TOLERANCE)
+        {
+            canvas.drawLine(mStartX, mStartY, mx, my, paint);
+        }
+    }
+
+    private void onTouchEventLine(MotionEvent event)
+    {
+        switch (event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                isDrawing = true;
+                mStartX = mx;
+                mStartY = my;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_UP:
+                isDrawing = false;
+                mCanvas.drawLine(mStartX, mStartY, mx, my, paint);
+                break;
+        }
+        //Перерисовать
+        invalidate();
+    }
+    //----------------------------------------------------------------------------------------------
+    // Triangle
+    int countTouch = 0;
+    float basexTriangle = 0;
+    float baseyTriangle = 0;
+
+    private void onDrawTriangle(Canvas canvas)
+    {
+        if (countTouch < 3)
+        {
+            canvas.drawLine(mStartX,mStartY,mx,my, paint);
+        } else if (countTouch == 3)
+        {
+            canvas.drawLine(mx,my,mStartX,mStartY, paint);
+            canvas.drawLine(mx,my,basexTriangle,baseyTriangle, paint);
+        }
+    }
+
+    private void onTouchEventTriangle(MotionEvent event)
+    {
+        switch (event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                countTouch++;
+                if (countTouch == 1)
+                {
+                    isDrawing = true;
+                    mStartX = mx;
+                    mStartY = my;
+                } else if (countTouch == 3)
+                {
+                    isDrawing = true;
+                }
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_UP:
+                countTouch++;
+                isDrawing = false;
+                if (countTouch < 3)
+                {
+                    basexTriangle = mx;
+                    baseyTriangle = my;
+                    mCanvas.drawLine(mStartX, mStartY, mx, my, paint);
+                } else
+                {
+                    mCanvas.drawLine(mx, my, mStartX, mStartY, paint);
+                    mCanvas.drawLine(mx, my, basexTriangle, baseyTriangle, paint);
+                    countTouch = 0;
+                }
+                break;
+        }
+        //Перерисовать
+        invalidate();
+    }
+    //----------------------------------------------------------------------------------------------
+    // Circle
+    private void onDrawCircle(Canvas canvas)
+    {
+        canvas.drawCircle(mStartX, mStartY, calculateRadius(mStartX, mStartY, mx, my), paint);
+    }
+
+    private void onTouchEventCircle(MotionEvent event)
+    {
+        switch (event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                isDrawing = true;
+                mStartX = mx;
+                mStartY = my;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_UP:
+                isDrawing = false;
+                mCanvas.drawCircle(mStartX, mStartY, calculateRadius(mStartX,mStartY,mx,my), paint);
+                break;
+        }
+        //Перерисовать
+        invalidate();
+    }
+
+    protected float calculateRadius(float x1, float y1, float x2, float y2)
+    {
+        return (float) Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+    }
+    //----------------------------------------------------------------------------------------------
+    // Rectangle
+    private void onDrawRectangle(Canvas canvas)
+    {
+        drawRectangle(canvas, paint);
+    }
+
+    private void onTouchEventRectangle(MotionEvent event)
+    {
+        switch (event.getAction())
+        {
+            case MotionEvent.ACTION_DOWN:
+                isDrawing = true;
+                mStartX = mx;
+                mStartY = my;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                break;
+            case MotionEvent.ACTION_UP:
+                isDrawing = false;
+                drawRectangle(mCanvas, paint);
+                break;
+        }
+        //Перерисовать
+        invalidate();
+    }
+
+    private void drawRectangle(Canvas canvas,Paint paint)
+    {
+        float right = Math.max(mStartX, mx);
+        float left = Math.min(mStartX, mx);
+        float bottom = Math.max(mStartY, my);
+        float top = Math.min(mStartY, my);
+        canvas.drawRect(left, top , right, bottom, paint);
+    }
+    //----------------------------------------------------------------------------------------------
+    // Square
+    private void onDrawSquare(Canvas canvas)
+    {
+        onDrawRectangle(canvas);
+    }
+
+    private void onTouchEventSquare(MotionEvent event)
+    {
+
+        switch (event.getAction()) {
+            case MotionEvent.ACTION_DOWN:
+                isDrawing = true;
+                mStartX = mx;
+                mStartY = my;
+                break;
+            case MotionEvent.ACTION_MOVE:
+                adjustSquare(mx, my);
+                break;
+            case MotionEvent.ACTION_UP:
+                isDrawing = false;
+                adjustSquare(mx, my);
+                drawRectangle(mCanvas, paint);
+                break;
+        }
+        //Перерисовать
+        invalidate();
+    }
+
+    private void adjustSquare(float x, float y)
+    {
+        float deltaX = Math.abs(mStartX - x);
+        float deltaY = Math.abs(mStartY - y);
+
+        float max = Math.max(deltaX, deltaY);
+
+        mx = mStartX - x < 0 ? mStartX + max : mStartX - max;
+        my = mStartY - y < 0 ? mStartY + max : mStartY - max;
+    }
+    //----------------------------------------------------------------------------------------------
+
+    //----------------------------------------------------------------------------------------------
+    private void addToLog(String msg)
+    {
+        Log.d("TAG", msg);
     }
     //----------------------------------------------------------------------------------------------
 }
