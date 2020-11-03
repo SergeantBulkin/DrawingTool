@@ -65,7 +65,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Прямоугольник"/>
+            android:text="@string/bottom_sheet_dialog_shape_rectangle"/>
     </LinearLayout>
 
     <LinearLayout
@@ -85,7 +85,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Квадрат"/>
+            android:text="@string/bottom_sheet_dialog_shape_square"/>
     </LinearLayout>
 
     <LinearLayout
@@ -105,7 +105,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Круг"/>
+            android:text="@string/bottom_sheet_dialog_shape_circle"/>
     </LinearLayout>
 
     <LinearLayout
@@ -125,7 +125,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="Треугольник"/>
+            android:text="@string/bottom_sheet_dialog_shape_triangle"/>
     </LinearLayout>
 
 </LinearLayout>

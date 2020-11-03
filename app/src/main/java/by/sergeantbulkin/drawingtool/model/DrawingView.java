@@ -1,6 +1,7 @@
 package by.sergeantbulkin.drawingtool.model;
 
 import android.content.Context;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -25,6 +26,7 @@ public class DrawingView extends View
 
     //Indicates if you are drawing
     private boolean isDrawing = false;
+    private boolean isNightTheme = false;
 
     private float mStartX;
     private float mStartY;
@@ -32,15 +34,20 @@ public class DrawingView extends View
     private float mx;
     private float my;
 
+    //Ширина DrawingView
+    private int width;
+    //Высота DrawingView
+    private int height;
+    //Текущая выбранная форма рисования
     private int currentShape;
     //----------------------------------------------------------------------------------------------
-    // путь для рисования
+    //Путь для рисования
     private Path path;
-    // Paint для рисования и для холста
+    //Paint для рисования и для холста
     private Paint paint;
-    // холст
+    //Холст
     private Canvas mCanvas;
-    // битмап холста
+    //Bitmap холста
     private Bitmap canvasBitmap;
     //----------------------------------------------------------------------------------------------
     public DrawingView(Context context, @Nullable AttributeSet attrs)
@@ -59,14 +66,37 @@ public class DrawingView extends View
     {
         this.currentShape = shape;
     }
+    //Установить картинку
+    public void setBitmap(Bitmap bitmapPic)
+    {
+        canvasBitmap = bitmapPic.copy(Bitmap.Config.ARGB_8888, true);
+        mCanvas = new Canvas(canvasBitmap);
+        invalidate();
+    }
+    //Получить текущую картинку
+    public Bitmap getCanvasBitmap()
+    {
+        return this.canvasBitmap;
+    }
+    //Залить всё белым цветом
+    public void clearAll()
+    {
+        canvasBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        mCanvas = new Canvas(canvasBitmap);
+        mCanvas.drawColor(isNightTheme ? 0xFF414141 : 0xFFFFFFFF);
+        invalidate();
+    }
     //----------------------------------------------------------------------------------------------
     private void setUpDrawing()
     {
+        //По умолчанию выбран карандаш
         currentShape = 1;
-        path = new Path();
+        //Запомнить выбранную тему
+        isNightTheme = isNightTheme();
 
+        path = new Path();
         paint = new Paint(Paint.DITHER_FLAG);
-        paint.setColor(0xFF000000); // начальный цвет
+        paint.setColor(isNightTheme ? 0xFFFFFFFF : 0xFF000000);
         paint.setAntiAlias(true);
         paint.setStrokeWidth(25);
         paint.setStyle(Paint.Style.STROKE);
@@ -74,13 +104,31 @@ public class DrawingView extends View
         paint.setStrokeCap(Paint.Cap.ROUND);
     }
     //----------------------------------------------------------------------------------------------
+    //Проверить какая тема установлена в данный момент
+    private boolean isNightTheme()
+    {
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isDark = false;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) isDark = true;
+        return isDark;
+    }
+    //----------------------------------------------------------------------------------------------
     //Задание размера View
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh)
     {
         super.onSizeChanged(w, h, oldw, oldh);
+        //Запомнить ширину и высоту DrawingView
+        width = w;
+        height = h;
+
+        addToLog("view - w = " + w + "| h - " + h + "| oldw = " + oldw + "| oldh = " + oldh);
+        //Создать Bitmap
         canvasBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        //Поместить Bitmap на холст
         mCanvas = new Canvas(canvasBitmap);
+        //Закрасить Bitmap
+        mCanvas.drawColor(isNightTheme ? 0xFF414141 : 0xFFFFFFFF);
     }
     //----------------------------------------------------------------------------------------------
     //Отображения рисунка, который нарисован пользователем

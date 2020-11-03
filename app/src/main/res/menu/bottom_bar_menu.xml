@@ -4,8 +4,8 @@
     <item
         android:id="@+id/drawShape"
         android:icon="@drawable/ic_pen"
-        android:title="@string/bottom_bar_menu_shape_line"
-        android:contentDescription="@string/bottom_bar_menu_shape_line"
+        android:title="@string/bottom_bar_menu_shape_select"
+        android:contentDescription="@string/bottom_bar_menu_shape_select"
         app:showAsAction="always">
     </item>
     <item
@@ -33,10 +33,26 @@
     </item>
 
     <item
+        android:id="@+id/clear"
+        android:icon="@drawable/ic_delete"
+        android:title="@string/bottom_bar_menu_clear"
+        android:contentDescription="@string/bottom_bar_menu_clear"
+        app:showAsAction="always">
+    </item>
+
+    <item
         android:id="@+id/more"
         android:icon="@drawable/ic_more"
         android:title="@string/bottom_bar_menu_more"
         android:contentDescription="@string/bottom_bar_menu_more"
-        app:showAsAction="always">
+        app:showAsAction="never">
+    </item>
+
+    <item
+        android:id="@+id/save"
+        android:icon="@drawable/ic_save"
+        android:title="@string/bottom_bar_menu_save"
+        android:contentDescription="@string/bottom_bar_menu_save"
+        app:showAsAction="never">
     </item>
 </menu>

@@ -1,9 +1,17 @@
 <resources>
     <string name="app_name">DrawingTool</string>
-    <string name="bottom_bar_menu_shape_line">Line</string>
-    <string name="bottom_bar_menu_paint_size">Paint Size</string>
-    <string name="bottom_bar_menu_color_picker">Color Picker</string>
-    <string name="bottom_bar_menu_upload_image">Upload Image</string>
-    <string name="bottom_bar_menu_more">More</string>
-    <string name="bottom_bar_navigation">Navigation</string>
+    <string name="bottom_bar_menu_shape_select">Выбор формы</string>
+    <string name="bottom_bar_menu_paint_size">Размер кисти</string>
+    <string name="bottom_bar_menu_color_picker">Выбор цвета</string>
+    <string name="bottom_bar_menu_upload_image">Загрузить картинку</string>
+    <string name="bottom_bar_menu_more">Больше</string>
+    <string name="bottom_bar_navigation">Навигация</string>
+    <string name="bottom_sheet_dialog_shape_rectangle">Прямоугольник</string>
+    <string name="bottom_sheet_dialog_shape_square">Квадрат</string>
+    <string name="bottom_sheet_dialog_shape_circle">Круг</string>
+    <string name="bottom_sheet_dialog_shape_triangle">Треугольник</string>
+    <string name="bottom_sheet_dialog_upload_camera">Камера</string>
+    <string name="bottom_sheet_dialog_upload_gallery">Галерея</string>
+    <string name="bottom_bar_menu_clear">Очистить</string>
+    <string name="bottom_bar_menu_save">Сохранить</string>
 </resources>

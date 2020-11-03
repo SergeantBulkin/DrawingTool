@@ -1,10 +1,14 @@
 package by.sergeantbulkin.drawingtool;
 
-import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
-import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
-
+import android.Manifest;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
+import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -13,16 +17,34 @@ import android.widget.LinearLayout;
 
 import com.azeesoft.lib.colorpicker.ColorPickerDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.snackbar.BaseTransientBottomBar;
+import com.google.android.material.snackbar.Snackbar;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.AppCompatActivity;
+import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity
 {
+    private static final int PERMISSION_CODE = 1000;
+    private static final int IMAGE_CAPTURE_CODE = 1001;
+    private static final int GALLERY_REQUEST = 1002;
     ActivityMainBinding binding;
     //Диалог выбора цвета
     ColorPickerDialog colorPickerDialog;
     //Дилог выбора формы
     BottomSheetDialog shapeDialog;
+    //Диалог для выбора варианта загрузки
+    BottomSheetDialog uploadDialog;
     //Clicked MenuItem для изменения иконки
     MenuItem clickedItem;
+    //Дает возможность обратиться к захваченному камерой изображению
+    Uri cameraUri;
     //----------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -54,10 +76,82 @@ public class MainActivity extends AppCompatActivity
             binding.drawingView.setDrawPaintColor(color);
         });
 
+        //Подготовка BottomSheet для выбора формы рисования
+        setUpShapeSheet();
+
+        //Подготовка BottomSheet для выбора варианта загрузки
+        //setUpUploadingSheet();
+
+        //Запросить разрешения
+        requestPermissions();
+    }
+    //----------------------------------------------------------------------------------------------
+    //Установить Menu
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu)
+    {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.bottom_bar_menu, menu);
+        return true;
+    }
+    //----------------------------------------------------------------------------------------------
+    //Обработка нажатия на элементы Menu
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item)
+    {
+        int id = item.getItemId();
+        clickedItem = item;
+        if (id == R.id.drawShape)
+        {
+            shapeDialog.show();
+            return true;
+        } else if (id == R.id.colorPicker)
+        {
+            colorPickerDialog.show();
+            return true;
+        } else if (id == R.id.uploadImage)
+        {
+            //Запустить галерею
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("image/*");
+            startActivityForResult(photoPickerIntent, GALLERY_REQUEST);
+            //uploadDialog.show();
+            return true;
+        } else if (id == R.id.clear)
+        {
+            binding.drawingView.clearAll();
+        } else if (id == R.id.more)
+        {
+            return true;
+        } else if (id == R.id.save)
+        {
+            saveImage();
+        }
+        return false;
+    }
+    //----------------------------------------------------------------------------------------------
+    //Сохранить картинку
+    private void saveImage()
+    {
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+"/Filename.jpg");
+        try(FileOutputStream outputStream = new FileOutputStream(file))
+        {
+            Bitmap bitmap = binding.drawingView.getCanvasBitmap();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            Snackbar.make(binding.getRoot(), "Saved", BaseTransientBottomBar.LENGTH_SHORT).show();
+        } catch (IOException e)
+        {
+            e.printStackTrace();
+        }
+    }
+    //----------------------------------------------------------------------------------------------
+    //Подготовка BottomSheet для выбора формы рисования
+    private void setUpShapeSheet()
+    {
         //Создать диалог для выбора формы
         shapeDialog = new BottomSheetDialog(this);
         shapeDialog.setContentView(getLayoutInflater().inflate(R.layout.dialog_shape, null));
-        //Объявление строк выбора форм рисования и установка слушателей нажатия
+        //Объявление выбора форм рисования и установка слушателей нажатия
         LinearLayout linear_layout_curved_line = shapeDialog.findViewById(R.id.linear_layout_curved_line);
         linear_layout_curved_line.setOnClickListener(v ->
         {
@@ -109,42 +203,130 @@ public class MainActivity extends AppCompatActivity
             shapeDialog.dismiss();
         });
     }
-    //----------------------------------------------------------------------------------------------
-    //Установить Menu
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu)
+    //Подготовка BottomSheet для выбора варианта загрузки
+    private void setUpUploadingSheet()
     {
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.bottom_bar_menu, menu);
-        return true;
-    }
+        uploadDialog = new BottomSheetDialog(this);
+        uploadDialog.setContentView(getLayoutInflater().inflate(R.layout.dialog_upload, null));
+        //Объявление выбора загрузки картинки и установка слушателей нажатия
+        /*LinearLayout linear_layout_camera = uploadDialog.findViewById(R.id.linear_layout_camera);
+        linear_layout_camera.setOnClickListener(v ->
+        {
+            //Закрыть диалог
+            uploadDialog.dismiss();
 
-    //Обработка нажатия на элементы Menu
-    @Override
-    public boolean onOptionsItemSelected(@NonNull MenuItem item)
+            openCamera();
+        });*/
+
+        LinearLayout linear_layout_gallery = uploadDialog.findViewById(R.id.linear_layout_gallery);
+        linear_layout_gallery.setOnClickListener(v ->
+        {
+            //Закрыть диалог
+            uploadDialog.dismiss();
+
+            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
+            photoPickerIntent.setType("image/*");
+            startActivityForResult(photoPickerIntent, GALLERY_REQUEST);
+        });
+    }
+    //----------------------------------------------------------------------------------------------
+    //Получить изображение с камеры
+/*    private void openCamera()
     {
-        int id = item.getItemId();
-        clickedItem = item;
-        if (id == R.id.drawShape)
+        ContentValues values = new ContentValues();
+        values.put(MediaStore.Images.Media.TITLE, "New Picture");
+        values.put(MediaStore.Images.Media.DESCRIPTION, "From the Camera");
+        cameraUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
+        startActivityForResult(cameraIntent, IMAGE_CAPTURE_CODE);
+    }*/
+    //----------------------------------------------------------------------------------------------
+    //Запрос разрешений
+    private void requestPermissions()
+    {
+        //Проверить разрешения камеры и записи в хранилище
+        if (checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_DENIED
+                && checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED
+                && checkSelfPermission(Manifest.permission.READ_EXTERNAL_STORAGE) == PackageManager.PERMISSION_DENIED)
         {
-            shapeDialog.show();
-            return true;
-        } else if (id == R.id.colorPicker)
-        {
-            colorPickerDialog.show();
-            return true;
-        } else if (id == R.id.uploadImage)
-        {
-            return true;
-        } else if (id == R.id.more)
-        {
-            return true;
+            //Инициализация массива строк с необходимыми разрешениями
+            String[] permissions = {Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE};
+            //Запросить разрешение
+            requestPermissions(permissions, PERMISSION_CODE);
         }
-        return false;
+    }
+    //----------------------------------------------------------------------------------------------
+    //Обработка полученного ответа для разрешений
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
+    {
+        switch (requestCode)
+        {
+            case PERMISSION_CODE:
+                if (grantResults.length > 0
+                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[1] == PackageManager.PERMISSION_GRANTED
+                        && grantResults[2] == PackageManager.PERMISSION_GRANTED)
+                {
+                    addToLog("Разрешения получены");
+                } else
+                {
+                    Snackbar.make(binding.getRoot(), "Разрешеня не получены", BaseTransientBottomBar.LENGTH_SHORT).show();
+                }
+        }
+    }
+    //----------------------------------------------------------------------------------------------
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data)
+    {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK)
+        {
+            switch (requestCode)
+            {
+                /*case IMAGE_CAPTURE_CODE:
+                    if (data != null)
+                    {
+                        ImageView imageView = new ImageView(this);
+                        imageView.setImageURI(cameraUri);
+                        addToLog(cameraUri.getPath());
+                        try
+                        {
+                            final InputStream imageStream = getContentResolver().openInputStream(cameraUri);
+                            final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
+                            binding.drawingView.setBitmap(selectedImage);
+                        } catch (FileNotFoundException e)
+                        {
+                            e.printStackTrace();
+                            addToLog(e.getLocalizedMessage());
+                        }
+                        addToLog("Success");
+                    }
+                    break;*/
+                case GALLERY_REQUEST:
+                    assert data != null;
+                    Uri selectedImage = data.getData();
+                    try {
+                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImage);
+                        float scale = getResources().getDisplayMetrics().density;
+                        addToLog("W - " + bitmap.getWidth() + "| H - " + bitmap.getHeight() + "|scale - " + scale);
+
+
+
+                        bitmap = Bitmap.createScaledBitmap(bitmap, 1080, 900, false);
+                        binding.drawingView.setBitmap(bitmap);
+                    } catch (IOException e) {
+                        Log.i("TAG", "Some exception " + e);
+                    }
+                    break;
+            }
+        }
     }
     //----------------------------------------------------------------------------------------------
     private void addToLog(String msg)
     {
         Log.d("TAG", msg);
     }
+    //----------------------------------------------------------------------------------------------
 }
