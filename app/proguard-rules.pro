@@ -20,4 +20,7 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# For Android Image Cropper
+-keep class androidx.appcompat.widget.** { *; }
+
 -repackageclasses

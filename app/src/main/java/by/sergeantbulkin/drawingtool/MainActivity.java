@@ -3,7 +3,6 @@ package by.sergeantbulkin.drawingtool;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -19,6 +18,8 @@ import com.azeesoft.lib.colorpicker.ColorPickerDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
+import com.theartofdev.edmodo.cropper.CropImage;
+import com.theartofdev.edmodo.cropper.CropImageView;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -32,7 +33,6 @@ import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
 public class MainActivity extends AppCompatActivity
 {
     private static final int PERMISSION_CODE = 1000;
-    private static final int IMAGE_CAPTURE_CODE = 1001;
     private static final int GALLERY_REQUEST = 1002;
     ActivityMainBinding binding;
     //Диалог выбора цвета
@@ -43,8 +43,6 @@ public class MainActivity extends AppCompatActivity
     BottomSheetDialog uploadDialog;
     //Clicked MenuItem для изменения иконки
     MenuItem clickedItem;
-    //Дает возможность обратиться к захваченному камерой изображению
-    Uri cameraUri;
     //----------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -80,10 +78,13 @@ public class MainActivity extends AppCompatActivity
         setUpShapeSheet();
 
         //Подготовка BottomSheet для выбора варианта загрузки
-        //setUpUploadingSheet();
+        setUpUploadingSheet();
 
         //Запросить разрешения
         requestPermissions();
+
+        //Передать высоту бара DrawingView
+        binding.drawingView.setBottomBarHeight(binding.bottomAppBar.getMinimumHeight());
     }
     //----------------------------------------------------------------------------------------------
     //Установить Menu
@@ -111,11 +112,7 @@ public class MainActivity extends AppCompatActivity
             return true;
         } else if (id == R.id.uploadImage)
         {
-            //Запустить галерею
-            Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
-            photoPickerIntent.setType("image/*");
-            startActivityForResult(photoPickerIntent, GALLERY_REQUEST);
-            //uploadDialog.show();
+            uploadDialog.show();
             return true;
         } else if (id == R.id.clear)
         {
@@ -125,24 +122,10 @@ public class MainActivity extends AppCompatActivity
             return true;
         } else if (id == R.id.save)
         {
+            //Сохранить картинку
             saveImage();
         }
         return false;
-    }
-    //----------------------------------------------------------------------------------------------
-    //Сохранить картинку
-    private void saveImage()
-    {
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+"/Filename.jpg");
-        try(FileOutputStream outputStream = new FileOutputStream(file))
-        {
-            Bitmap bitmap = binding.drawingView.getCanvasBitmap();
-            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            Snackbar.make(binding.getRoot(), "Saved", BaseTransientBottomBar.LENGTH_SHORT).show();
-        } catch (IOException e)
-        {
-            e.printStackTrace();
-        }
     }
     //----------------------------------------------------------------------------------------------
     //Подготовка BottomSheet для выбора формы рисования
@@ -203,20 +186,27 @@ public class MainActivity extends AppCompatActivity
             shapeDialog.dismiss();
         });
     }
+    //----------------------------------------------------------------------------------------------
     //Подготовка BottomSheet для выбора варианта загрузки
     private void setUpUploadingSheet()
     {
         uploadDialog = new BottomSheetDialog(this);
         uploadDialog.setContentView(getLayoutInflater().inflate(R.layout.dialog_upload, null));
         //Объявление выбора загрузки картинки и установка слушателей нажатия
-        /*LinearLayout linear_layout_camera = uploadDialog.findViewById(R.id.linear_layout_camera);
+        LinearLayout linear_layout_camera = uploadDialog.findViewById(R.id.linear_layout_camera);
         linear_layout_camera.setOnClickListener(v ->
         {
             //Закрыть диалог
             uploadDialog.dismiss();
 
-            openCamera();
-        });*/
+            //Из камеры
+            CropImage.activity()
+                    .setGuidelines(CropImageView.Guidelines.ON)
+                    .setAspectRatio(binding.drawingView.getWidthView(), binding.drawingView.getHeightView())
+                    .setFixAspectRatio(true)
+                    .start(this);
+
+        });
 
         LinearLayout linear_layout_gallery = uploadDialog.findViewById(R.id.linear_layout_gallery);
         linear_layout_gallery.setOnClickListener(v ->
@@ -224,23 +214,28 @@ public class MainActivity extends AppCompatActivity
             //Закрыть диалог
             uploadDialog.dismiss();
 
+            //Запустить галерею
             Intent photoPickerIntent = new Intent(Intent.ACTION_PICK);
             photoPickerIntent.setType("image/*");
             startActivityForResult(photoPickerIntent, GALLERY_REQUEST);
         });
     }
     //----------------------------------------------------------------------------------------------
-    //Получить изображение с камеры
-/*    private void openCamera()
+    //Сохранить картинку
+    private void saveImage()
     {
-        ContentValues values = new ContentValues();
-        values.put(MediaStore.Images.Media.TITLE, "New Picture");
-        values.put(MediaStore.Images.Media.DESCRIPTION, "From the Camera");
-        cameraUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, cameraUri);
-        startActivityForResult(cameraIntent, IMAGE_CAPTURE_CODE);
-    }*/
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+"/Filename.jpg");
+        try(FileOutputStream outputStream = new FileOutputStream(file))
+        {
+            Bitmap bitmap = binding.drawingView.getCanvasBitmap();
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
+            Snackbar.make(binding.getRoot(), "Saved", BaseTransientBottomBar.LENGTH_SHORT).show();
+        } catch (IOException e)
+        {
+            addToLog("Exception: " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+    }
     //----------------------------------------------------------------------------------------------
     //Запрос разрешений
     private void requestPermissions()
@@ -261,19 +256,17 @@ public class MainActivity extends AppCompatActivity
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults)
     {
-        switch (requestCode)
+        if (requestCode == PERMISSION_CODE)
         {
-            case PERMISSION_CODE:
-                if (grantResults.length > 0
-                        && grantResults[0] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[1] == PackageManager.PERMISSION_GRANTED
-                        && grantResults[2] == PackageManager.PERMISSION_GRANTED)
-                {
-                    addToLog("Разрешения получены");
-                } else
-                {
-                    Snackbar.make(binding.getRoot(), "Разрешеня не получены", BaseTransientBottomBar.LENGTH_SHORT).show();
-                }
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED && grantResults[1] == PackageManager.PERMISSION_GRANTED && grantResults[2] == PackageManager.PERMISSION_GRANTED)
+            {
+                addToLog("Разрешения получены");
+            } else
+            {
+                Snackbar.make(binding
+                        .getRoot(), "Разрешеня не получены", BaseTransientBottomBar.LENGTH_SHORT)
+                        .show();
+            }
         }
     }
     //----------------------------------------------------------------------------------------------
@@ -283,45 +276,117 @@ public class MainActivity extends AppCompatActivity
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK)
         {
-            switch (requestCode)
+            if (requestCode == GALLERY_REQUEST)
             {
-                /*case IMAGE_CAPTURE_CODE:
-                    if (data != null)
-                    {
-                        ImageView imageView = new ImageView(this);
-                        imageView.setImageURI(cameraUri);
-                        addToLog(cameraUri.getPath());
-                        try
-                        {
-                            final InputStream imageStream = getContentResolver().openInputStream(cameraUri);
-                            final Bitmap selectedImage = BitmapFactory.decodeStream(imageStream);
-                            binding.drawingView.setBitmap(selectedImage);
-                        } catch (FileNotFoundException e)
-                        {
-                            e.printStackTrace();
-                            addToLog(e.getLocalizedMessage());
-                        }
-                        addToLog("Success");
-                    }
-                    break;*/
-                case GALLERY_REQUEST:
-                    assert data != null;
+                if (data.getData() != null)
+                {
                     Uri selectedImage = data.getData();
-                    try {
-                        Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), selectedImage);
-                        float scale = getResources().getDisplayMetrics().density;
-                        addToLog("W - " + bitmap.getWidth() + "| H - " + bitmap.getHeight() + "|scale - " + scale);
-
-
-
-                        bitmap = Bitmap.createScaledBitmap(bitmap, 1080, 900, false);
-                        binding.drawingView.setBitmap(bitmap);
-                    } catch (IOException e) {
-                        Log.i("TAG", "Some exception " + e);
-                    }
-                    break;
+                    //Вызвать окно редактирования картинки
+                    CropImage.activity(selectedImage)
+                            .setAspectRatio(binding.drawingView.getWidthView(), binding.drawingView.getHeightView())
+                            .setFixAspectRatio(true)
+                            .start(this);
+                } else
+                {
+                    //Показать сообщение об ошибке
+                    Snackbar.make(binding.getRoot(), "Ошибка загрузки", BaseTransientBottomBar.LENGTH_SHORT).show();
+                }
+            }
+            if (requestCode == CropImage.CROP_IMAGE_ACTIVITY_REQUEST_CODE)
+            {
+                try
+                {
+                    CropImage.ActivityResult result = CropImage.getActivityResult(data);
+                    Uri resultUri = result.getUri();
+                    Bitmap bitmap = MediaStore.Images.Media.getBitmap(getContentResolver(), resultUri);
+                    binding.drawingView.setBitmap(scaleBitmap(bitmap));
+                } catch (IOException e)
+                {
+                    e.printStackTrace();
+                }
             }
         }
+    }
+    //----------------------------------------------------------------------------------------------
+    //Изменить размер картинки
+    private Bitmap scaleBitmap(Bitmap bitmap)
+    {
+        int srcW = bitmap.getWidth();
+        int srcH = bitmap.getHeight();
+        int viewH = binding.drawingView.getHeightView();
+        int viewW = binding.drawingView.getWidthView();
+        int dstW = srcW;
+        int dstH = srcH;
+        addToLog("old W - " + srcW + "| H - " + srcH + "|");
+
+        //Пока ширина или высота картинки больше чем DrawingView
+        if (dstW > viewW || dstH > viewH)
+        {
+            if (srcH == srcW) //Квадратная картинка
+            {
+                addToLog("Квадратная картинка");
+                dstW = (srcH*viewH)/srcH;
+                dstH = dstW;
+                addToLog("new W - " + dstW + "| H - " + dstW + "|");
+                bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstW, true);
+
+            } else //Вертикальная или горизонтальная картинка
+            {
+                addToLog("Вертикальная картинка");
+
+                //Исправить высоту
+                if (dstH > viewH)
+                {
+                    dstH = viewH;
+                    dstW = (srcW*dstH)/srcH;
+                    addToLog("Высоту W - " + dstW + "| H - " + dstH + "|");
+                    bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstH, true);
+                }
+                //Исправить ширину
+                if (dstW > viewW)
+                {
+                    dstW = viewW;
+                    dstH = (dstW*srcH)/srcW;
+                    addToLog("Ширину W - " + dstW + "| H - " + dstH + "|");
+                    bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstH, true);
+                }
+            }
+        }
+
+        //Если ширина или высота картинки меньше чем DrawingView
+        if (dstW < viewW || dstH < viewH)
+        {
+            if (srcH == srcW) //Квадратная картинка
+            {
+                addToLog("Квадратная картинка");
+                dstW = (srcH*viewH)/srcH;
+                addToLog("new W - " + dstW + "| H - " + dstW + "|");
+                bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstW, true);
+
+            } else //Вертикальная или горизонтальная картинка
+            {
+                addToLog("Вертикальная картинка");
+
+                //Исправить высоту
+                if (dstH < viewH)
+                {
+                    dstH = viewH;
+                    dstW = (srcW*dstH)/srcH;
+                    addToLog("Высоту W - " + dstW + "| H - " + dstH + "|");
+                    bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstH, true);
+                }
+                //Исправить ширину
+                if (dstW < viewW)
+                {
+                    dstW = viewW;
+                    dstH = (dstW*srcH)/srcW;
+                    addToLog("Ширину W - " + dstW + "| H - " + dstH + "|");
+                    bitmap = Bitmap.createScaledBitmap(bitmap, dstW, dstH, true);
+                }
+            }
+        }
+
+        return bitmap;
     }
     //----------------------------------------------------------------------------------------------
     private void addToLog(String msg)

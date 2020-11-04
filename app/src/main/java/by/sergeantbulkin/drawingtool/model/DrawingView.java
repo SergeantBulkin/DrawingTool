@@ -35,9 +35,11 @@ public class DrawingView extends View
     private float my;
 
     //Ширина DrawingView
-    private int width;
+    private int widthView;
     //Высота DrawingView
-    private int height;
+    private int heightView;
+    //Высота BottomBar
+    private int bottomBarHeight;
     //Текущая выбранная форма рисования
     private int currentShape;
     //----------------------------------------------------------------------------------------------
@@ -70,6 +72,9 @@ public class DrawingView extends View
     public void setBitmap(Bitmap bitmapPic)
     {
         canvasBitmap = bitmapPic.copy(Bitmap.Config.ARGB_8888, true);
+        int srcW = canvasBitmap.getWidth();
+        int srcH = canvasBitmap.getHeight();
+        addToLog("canvasBitmap W - " + srcW + "| H - " + srcH + "|");
         mCanvas = new Canvas(canvasBitmap);
         invalidate();
     }
@@ -81,10 +86,25 @@ public class DrawingView extends View
     //Залить всё белым цветом
     public void clearAll()
     {
-        canvasBitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        canvasBitmap = Bitmap.createBitmap(widthView, heightView, Bitmap.Config.ARGB_8888);
         mCanvas = new Canvas(canvasBitmap);
         mCanvas.drawColor(isNightTheme ? 0xFF414141 : 0xFFFFFFFF);
         invalidate();
+    }
+    //Вернуть ширину DrawingView
+    public int getWidthView()
+    {
+        return widthView;
+    }
+    //Вернуть высоту DrawingView
+    public int getHeightView()
+    {
+        return heightView;
+    }
+    //Установить высоту BottomAppBar
+    public void setBottomBarHeight(int bottomBarHeight)
+    {
+        this.bottomBarHeight = bottomBarHeight;
     }
     //----------------------------------------------------------------------------------------------
     private void setUpDrawing()
@@ -119,10 +139,10 @@ public class DrawingView extends View
     {
         super.onSizeChanged(w, h, oldw, oldh);
         //Запомнить ширину и высоту DrawingView
-        width = w;
-        height = h;
-
-        addToLog("view - w = " + w + "| h - " + h + "| oldw = " + oldw + "| oldh = " + oldh);
+        widthView = w;
+        heightView = h - bottomBarHeight;
+        addToLog("BottomDraw - " + bottomBarHeight);
+        addToLog("view - w = " + widthView + "| h - " + heightView);
         //Создать Bitmap
         canvasBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         //Поместить Bitmap на холст
