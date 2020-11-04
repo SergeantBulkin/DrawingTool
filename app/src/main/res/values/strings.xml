@@ -14,4 +14,6 @@
     <string name="bottom_sheet_dialog_upload_gallery">Галерея</string>
     <string name="bottom_bar_menu_clear">Очистить</string>
     <string name="bottom_bar_menu_save">Сохранить</string>
+    <string name="bottom_sheet_brush_size_cancel_button_text">Отмена</string>
+    <string name="bottom_sheet_brush_size_confirm_button_text">Применить</string>
 </resources>

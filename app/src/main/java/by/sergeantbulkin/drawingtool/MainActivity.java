@@ -12,12 +12,14 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.LinearLayout;
 
 import com.azeesoft.lib.colorpicker.ColorPickerDialog;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.snackbar.BaseTransientBottomBar;
 import com.google.android.material.snackbar.Snackbar;
+import com.ramotion.fluidslider.FluidSlider;
 import com.theartofdev.edmodo.cropper.CropImage;
 import com.theartofdev.edmodo.cropper.CropImageView;
 
@@ -29,6 +31,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
+import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -41,6 +44,8 @@ public class MainActivity extends AppCompatActivity
     BottomSheetDialog shapeDialog;
     //Диалог для выбора варианта загрузки
     BottomSheetDialog uploadDialog;
+    //Диалог для изменения толщины пера
+    BottomSheetDialog brushSizeDialog;
     //Clicked MenuItem для изменения иконки
     MenuItem clickedItem;
     //----------------------------------------------------------------------------------------------
@@ -80,6 +85,9 @@ public class MainActivity extends AppCompatActivity
         //Подготовка BottomSheet для выбора варианта загрузки
         setUpUploadingSheet();
 
+        //Подготовка BottomSheet для изменения толщины пера
+        setupBrushSizeDialog();
+
         //Запросить разрешения
         requestPermissions();
 
@@ -105,6 +113,10 @@ public class MainActivity extends AppCompatActivity
         if (id == R.id.drawShape)
         {
             shapeDialog.show();
+            return true;
+        } else if (id == R.id.paintSize)
+        {
+            brushSizeDialog.show();
             return true;
         } else if (id == R.id.colorPicker)
         {
@@ -220,6 +232,30 @@ public class MainActivity extends AppCompatActivity
             startActivityForResult(photoPickerIntent, GALLERY_REQUEST);
         });
     }
+    //Подготовка BottomSheet для изменения толщины пера
+    //----------------------------------------------------------------------------------------------
+    private void setupBrushSizeDialog()
+    {
+        brushSizeDialog = new BottomSheetDialog(this);
+        brushSizeDialog.setTitle("Толщина пера");
+        brushSizeDialog.setContentView(getLayoutInflater().inflate(R.layout.dialog_brush_size, null));
+        brushSizeDialog.setCanceledOnTouchOutside(false);
+        brushSizeDialog.setCancelable(false);
+
+        FluidSlider fluidSlider = brushSizeDialog.findViewById(R.id.fluid_slider);
+
+        Button cancelButton = brushSizeDialog.findViewById(R.id.brush_size_cancel_button);
+        cancelButton.setOnClickListener(v ->
+        {
+            brushSizeDialog.dismiss();
+        });
+        Button confirmButton = brushSizeDialog.findViewById(R.id.brush_size_confirm_button);
+        confirmButton.setOnClickListener(v ->
+        {
+            binding.drawingView.setStrokeWidth(fluidSlider.getPosition()*100);
+            brushSizeDialog.dismiss();
+        });
+    }
     //----------------------------------------------------------------------------------------------
     //Сохранить картинку
     private void saveImage()
@@ -229,7 +265,7 @@ public class MainActivity extends AppCompatActivity
         {
             Bitmap bitmap = binding.drawingView.getCanvasBitmap();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            Snackbar.make(binding.getRoot(), "Saved", BaseTransientBottomBar.LENGTH_SHORT).show();
+            Snackbar.make(binding.getRoot(), "Saved to \"\\Downloads\"", BaseTransientBottomBar.LENGTH_SHORT).show();
         } catch (IOException e)
         {
             addToLog("Exception: " + e.getLocalizedMessage());

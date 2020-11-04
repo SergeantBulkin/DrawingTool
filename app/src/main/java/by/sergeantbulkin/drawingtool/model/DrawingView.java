@@ -42,6 +42,8 @@ public class DrawingView extends View
     private int bottomBarHeight;
     //Текущая выбранная форма рисования
     private int currentShape;
+    //Толщина карандаша
+    private float strokeWidth = 25;
     //----------------------------------------------------------------------------------------------
     //Путь для рисования
     private Path path;
@@ -74,7 +76,6 @@ public class DrawingView extends View
         canvasBitmap = bitmapPic.copy(Bitmap.Config.ARGB_8888, true);
         int srcW = canvasBitmap.getWidth();
         int srcH = canvasBitmap.getHeight();
-        addToLog("canvasBitmap W - " + srcW + "| H - " + srcH + "|");
         mCanvas = new Canvas(canvasBitmap);
         invalidate();
     }
@@ -106,6 +107,12 @@ public class DrawingView extends View
     {
         this.bottomBarHeight = bottomBarHeight;
     }
+    //Установить толщину рисования
+    public void setStrokeWidth(float strokeWidthh)
+    {
+        this.strokeWidth = strokeWidthh;
+        paint.setStrokeWidth(strokeWidth);
+    }
     //----------------------------------------------------------------------------------------------
     private void setUpDrawing()
     {
@@ -118,7 +125,7 @@ public class DrawingView extends View
         paint = new Paint(Paint.DITHER_FLAG);
         paint.setColor(isNightTheme ? 0xFFFFFFFF : 0xFF000000);
         paint.setAntiAlias(true);
-        paint.setStrokeWidth(25);
+        paint.setStrokeWidth(strokeWidth);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeJoin(Paint.Join.ROUND);
         paint.setStrokeCap(Paint.Cap.ROUND);
@@ -141,8 +148,6 @@ public class DrawingView extends View
         //Запомнить ширину и высоту DrawingView
         widthView = w;
         heightView = h - bottomBarHeight;
-        addToLog("BottomDraw - " + bottomBarHeight);
-        addToLog("view - w = " + widthView + "| h - " + heightView);
         //Создать Bitmap
         canvasBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         //Поместить Bitmap на холст
