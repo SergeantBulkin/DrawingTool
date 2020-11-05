@@ -7,7 +7,6 @@ import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.provider.MediaStore;
 import android.util.Log;
 import android.view.Menu;
@@ -31,6 +30,8 @@ import java.io.IOException;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ShareCompat;
+import androidx.core.content.FileProvider;
 import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity
@@ -48,6 +49,8 @@ public class MainActivity extends AppCompatActivity
     BottomSheetDialog brushSizeDialog;
     //Clicked MenuItem для изменения иконки
     MenuItem clickedItem;
+    //Ночная тема
+    private boolean isNightTheme = false;
     //----------------------------------------------------------------------------------------------
     @Override
     protected void onCreate(Bundle savedInstanceState)
@@ -60,6 +63,8 @@ public class MainActivity extends AppCompatActivity
     //----------------------------------------------------------------------------------------------
     private void setUp()
     {
+        isNightTheme = isNightTheme();
+
         //Установка BottomBar
         setSupportActionBar(binding.bottomAppBar);
 
@@ -70,7 +75,7 @@ public class MainActivity extends AppCompatActivity
         });
 
         //Настройка ColorPickerDialog
-        if (isNightTheme())
+        if (isNightTheme)
         {
             colorPickerDialog = ColorPickerDialog.createColorPickerDialog(this, ColorPickerDialog.DARK_THEME);
         } else
@@ -139,7 +144,12 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.more)
         {
             return true;
-        } else if (id == R.id.save)
+        } else if (id == R.id.share)
+        {
+            //Поделиться картинкой
+            shareImage();
+            return true;
+        }else if (id == R.id.save)
         {
             //Сохранить картинку
             saveImage();
@@ -265,15 +275,62 @@ public class MainActivity extends AppCompatActivity
         });
     }
     //----------------------------------------------------------------------------------------------
+    //Поделиться картинкой
+    private void shareImage()
+    {
+        //Временный файл, куда будет сохранена текущая картинка
+        String fileName = System.currentTimeMillis() + ".jpg";
+        File tempFile = new File(getExternalFilesDir("Shared").getAbsolutePath(), fileName);
+        try(FileOutputStream outputStream = new FileOutputStream(tempFile))
+        {
+            //Получить текущую картинку на холсте
+            Bitmap bitmap = binding.drawingView.getCanvasBitmap();
+            if (bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream))
+            {
+                startShare(tempFile);
+            }
+        } catch (IOException e)
+        {
+            addToLog("Exception: " + e.getLocalizedMessage());
+            e.printStackTrace();
+        }
+    }
+    //Отправить картинку
+    private void startShare(File tempFile)
+    {
+        Uri uri = FileProvider.getUriForFile(this, "by.sergeantbulkin.fileprovider", tempFile);
+
+        Intent shareIntent = ShareCompat.IntentBuilder.from(this)
+                .setStream(uri)
+                .getIntent();
+        shareIntent.setData(uri);
+        shareIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        shareIntent.setType("image/*");
+        startActivity(shareIntent);
+    }
+    //----------------------------------------------------------------------------------------------
     //Сохранить картинку
     private void saveImage()
     {
-        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+"/Filename.jpg");
+        //Имя файла - текущее время в мс
+        String fileName = System.currentTimeMillis() + ".jpg";
+        //Путь по которму будет файл
+        String savePath = getExternalFilesDir("Saved").getAbsolutePath();
+        //Неполный путь сохранённого файла для отображения пользователям
+        String pathToShow = "/Android/data/by.sergeantbulkin.drawingtool/files/Saved";
+        File file = new File(savePath, fileName);
         try(FileOutputStream outputStream = new FileOutputStream(file))
         {
             Bitmap bitmap = binding.drawingView.getCanvasBitmap();
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, outputStream);
-            Snackbar.make(binding.getRoot(), "Saved to \"\\Downloads\"", BaseTransientBottomBar.LENGTH_SHORT).show();
+            Snackbar.make(binding.getRoot(), "Saved to \"" + pathToShow + "\"", BaseTransientBottomBar.LENGTH_SHORT)
+                    //Кнопка "Поделиться" после сохранения
+                    .setAction("Поделиться", v -> startShare(file))
+                    //Цвет кнопки "Поделиться"
+                    .setActionTextColor(getResources().getColor(isNightTheme ? R.color.purple_700: R.color.system_text_button_blue, this.getTheme()))
+                    //Максимальная ширина кнопки "Поделиться"
+                    .setMaxInlineActionWidth(10)
+                    .show();
         } catch (IOException e)
         {
             addToLog("Exception: " + e.getLocalizedMessage());
