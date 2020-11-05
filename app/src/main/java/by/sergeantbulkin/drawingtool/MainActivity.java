@@ -3,6 +3,7 @@ package by.sergeantbulkin.drawingtool;
 import android.Manifest;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
@@ -31,7 +32,6 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import by.sergeantbulkin.drawingtool.databinding.ActivityMainBinding;
-import kotlin.Unit;
 
 public class MainActivity extends AppCompatActivity
 {
@@ -70,7 +70,13 @@ public class MainActivity extends AppCompatActivity
         });
 
         //Настройка ColorPickerDialog
-        colorPickerDialog = ColorPickerDialog.createColorPickerDialog(this);
+        if (isNightTheme())
+        {
+            colorPickerDialog = ColorPickerDialog.createColorPickerDialog(this, ColorPickerDialog.DARK_THEME);
+        } else
+        {
+            colorPickerDialog = ColorPickerDialog.createColorPickerDialog(this);
+        }
         colorPickerDialog.hideColorComponentsInfo();
         colorPickerDialog.hideHexaDecimalValue();
         colorPickerDialog.setOnColorPickedListener((color, hexVal) ->
@@ -109,9 +115,9 @@ public class MainActivity extends AppCompatActivity
     public boolean onOptionsItemSelected(@NonNull MenuItem item)
     {
         int id = item.getItemId();
-        clickedItem = item;
         if (id == R.id.drawShape)
         {
+            clickedItem = item;
             shapeDialog.show();
             return true;
         } else if (id == R.id.paintSize)
@@ -129,6 +135,7 @@ public class MainActivity extends AppCompatActivity
         } else if (id == R.id.clear)
         {
             binding.drawingView.clearAll();
+            return true;
         } else if (id == R.id.more)
         {
             return true;
@@ -136,6 +143,7 @@ public class MainActivity extends AppCompatActivity
         {
             //Сохранить картинку
             saveImage();
+            return true;
         }
         return false;
     }
@@ -271,6 +279,15 @@ public class MainActivity extends AppCompatActivity
             addToLog("Exception: " + e.getLocalizedMessage());
             e.printStackTrace();
         }
+    }
+    //----------------------------------------------------------------------------------------------
+    //Проверить какая тема установлена в данный момент
+    private boolean isNightTheme()
+    {
+        int currentNightMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isDark = false;
+        if (currentNightMode == Configuration.UI_MODE_NIGHT_YES) isDark = true;
+        return isDark;
     }
     //----------------------------------------------------------------------------------------------
     //Запрос разрешений

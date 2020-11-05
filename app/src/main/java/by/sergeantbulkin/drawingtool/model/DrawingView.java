@@ -26,6 +26,7 @@ public class DrawingView extends View
 
     //Indicates if you are drawing
     private boolean isDrawing = false;
+    //Ночная тема
     private boolean isNightTheme = false;
 
     private float mStartX;
@@ -74,8 +75,6 @@ public class DrawingView extends View
     public void setBitmap(Bitmap bitmapPic)
     {
         canvasBitmap = bitmapPic.copy(Bitmap.Config.ARGB_8888, true);
-        int srcW = canvasBitmap.getWidth();
-        int srcH = canvasBitmap.getHeight();
         mCanvas = new Canvas(canvasBitmap);
         invalidate();
     }
@@ -84,7 +83,7 @@ public class DrawingView extends View
     {
         return this.canvasBitmap;
     }
-    //Залить всё белым цветом
+    //Залить всё белым или серым цветом
     public void clearAll()
     {
         canvasBitmap = Bitmap.createBitmap(widthView, heightView, Bitmap.Config.ARGB_8888);
@@ -108,9 +107,9 @@ public class DrawingView extends View
         this.bottomBarHeight = bottomBarHeight;
     }
     //Установить толщину рисования
-    public void setStrokeWidth(float strokeWidthh)
+    public void setStrokeWidth(float strokeWidthDialog)
     {
-        this.strokeWidth = strokeWidthh;
+        this.strokeWidth = strokeWidthDialog;
         paint.setStrokeWidth(strokeWidth);
     }
     //----------------------------------------------------------------------------------------------
